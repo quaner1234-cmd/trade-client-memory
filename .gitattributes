@@ -1,0 +1,9 @@
+*.pdf binary
+*.png binary
+*.zip binary
+*.eml -text
+
+# multichannel plan stays in the repo, never in the Email Beta release ZIP
+docs/MULTICHANNEL-RESEARCH.md export-ignore
+docs/WORKBUDDY-REVALIDATE.md export-ignore
+docs/MULTICHANNEL-PLAN.md export-ignore

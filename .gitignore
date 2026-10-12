@@ -1,0 +1,21 @@
+# runtime data — never ship or commit real customer data
+data/
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+# secrets / local config
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+credentials.json
+*app_password*
+# packaging build area
+dist/
+# user data — never commit (real customer mail, attachments, state)
+/客户档案/
+内部数据/
+/连接邮箱.command
+/连接邮箱.bat

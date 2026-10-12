@@ -1,0 +1,65 @@
+{
+  "_comment": "运行状态模板(结构契约示例)。不要手工创建:运行 `python scripts/tcm.py init` 会生成真实的 内部数据/state.json。客户可见成果在 <base>/客户档案/,程序状态在 <base>/内部数据/ —— 两者都不进 Git/ZIP。messages 键 = 邮件指纹(Message-ID 派生哈希,备用内容哈希存 identity_index,Message-ID 增/剥双向去重)。",
+  "version": 2,
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "owner": "you@company.com",
+  "messages": {
+    "<sha256-fingerprint>": {
+      "id": "12位十六进制短id(时间线与档案引用 [msg-<id>] 用它)",
+      "hash": "64位完整指纹(去重主键)",
+      "file": "导入源文件(优先相对 base 的路径,外部文件只存文件名)",
+      "ingested_at": "2026-01-01T00:00:00Z",
+      "from": { "name": "Marco Rossi", "email": "marco@customer.example" },
+      "to": [{ "name": "Alex", "email": "you@company.com" }],
+      "date": "2026-01-01",
+      "date_full": "2026-01-01T09:15:00+01:00",
+      "subject": "主题",
+      "message_id": "原始 Message-ID(可能为空)",
+      "direction": "received 或 sent",
+      "body_format": "plain 或 html(空 text/plain 自动回退 HTML)",
+      "attachments": [
+        {
+          "filename": "quote.pdf",
+          "stored_path": "内部数据/attachments/<id>/00-quote.pdf",
+          "size": 12345,
+          "sha256": "内容哈希(附件去重与签名Logo识别用)",
+          "content_type": "application/pdf",
+          "disposition": "attachment 或 inline",
+          "cid": "内嵌图片的 Content-ID(可空)",
+          "error": null
+        }
+      ],
+      "free_domain": false,
+      "processed": false
+    }
+  },
+  "identity_index": { "<备用指纹>": "<主指纹>" },
+  "customers": {
+    "客户邮箱小写": {
+      "slug": "稳定ID(永不改变;公司/国家变化由 render 重命名文件夹)",
+      "name": "联系人显示名",
+      "company": "公司名",
+      "country": "国家",
+      "confirmed": true
+    }
+  },
+  "folders": { "<slug>": "客户档案/下的当前文件夹名(重命名由 render 自动完成)" },
+  "reports": {
+    "<slug>": {
+      "stage": "阶段(如 PI 待发)",
+      "situation": "一两句现状",
+      "next": "谁需要做什么",
+      "priority": "urgent|action|waiting|unconfirmed",
+      "updated": "2026-01-01T00:00:00Z"
+    }
+  },
+  "coverage": {
+    "folders": { "INBOX": { "total": 725, "fetched": 120 } },
+    "since": "2026-09-01",
+    "recorded_at": "2026-01-01T00:00:00Z"
+  },
+  "runs": [
+    { "at": "2026-01-01T00:00:00Z", "cmd": "ingest", "new": 9, "skipped": 0, "files": 9 }
+  ]
+}
