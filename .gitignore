@@ -15,7 +15,11 @@ credentials.json
 # packaging build area
 dist/
 # user data — never commit (real customer mail, attachments, state)
+# NOTE: no leading slash — these folders must be ignored at ANY depth, not just
+# at the repo root. skills/*/ is a second-level install of the same layout.
 /客户档案/
+客户档案/
 内部数据/
+.scenario/
 /连接邮箱.command
 /连接邮箱.bat

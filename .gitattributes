@@ -7,3 +7,10 @@
 docs/MULTICHANNEL-RESEARCH.md export-ignore
 docs/WORKBUDDY-REVALIDATE.md export-ignore
 docs/MULTICHANNEL-PLAN.md export-ignore
+
+# The Alibaba companion skill lives in the repo but ships as its OWN package
+# (build it with skills/alibaba/scripts/build.py). Keep it out of the Email
+# Beta ZIP so the Email release stays exactly what was validated.
+# NOTE: gitattributes has no trailing-slash directory support — use /**.
+skills/** export-ignore
+skills export-ignore

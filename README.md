@@ -88,6 +88,16 @@ Read-only toward mail; passwords only via hidden input in the user's own termina
 2. Notion sync as optional module (structures already fixed).
 3. Scheduled incremental runs via host cron (same loop).
 
+## 阿里巴巴国际站询盘 Skill（2026-10-14 新增）
+
+同一仓库现在**另有**一套独立 Skill：**`skills/alibaba/`** —— 把已登录的阿里卖家后台（message.alibaba.com）里的询盘与聊天，只读整理成同构的本地客户档案（一个客户一个文件夹 + 客户概览）。
+
+- 输出结构与本 Email Skill 一致，可并存；**不读取邮箱，不修改 Email Skill 的任何文件**。
+- 自带 `SKILL.md` / `README.md` / `references/` / `scripts/` / `samples/` / `tests/`（67 项离线测试）。
+- 打包发布：`python skills/alibaba/scripts/build.py`（输出独立包，自带隐私扫描）。
+- 通过 `.gitattributes export-ignore` 排除在本 Email Beta ZIP 之外，两套包互不混淆。
+- **仅在 Hermes + bsk 浏览器桥接环境端到端验证**；其他 Agent / 桥接未验证，见其 README 的「已知限制」。
+
 ## License
 
 MIT — see [LICENSE](LICENSE). All sample data is fictional; any resemblance to real companies is coincidental.

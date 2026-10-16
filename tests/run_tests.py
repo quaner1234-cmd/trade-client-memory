@@ -466,7 +466,10 @@ def main() -> None:
     unexpected = [l for l in repo_dirty.splitlines() if "tests/" not in l and "scripts/" not in l
                   and "samples/" not in l and "docs/" not in l and ".gitignore" not in l
                   and "README" not in l and "START-HERE" not in l and "SKILL" not in l
-                  and "references/" not in l and "templates/" not in l]
+                  and "references/" not in l and "templates/" not in l
+                  # skills/ and .gitattributes: the Alibaba companion skill added
+                  # 2026-10-14 (repo-only, excluded from the Email ZIP)
+                  and "skills/" not in l and ".gitattributes" not in l]
     check("T22 repo worktree untouched by test data", not unexpected, str(unexpected[:3]))
     gi = (ROOT / ".gitignore").read_text(encoding="utf-8")
     check("T22 gitignore covers 客户档案/内部数据", "客户档案" in gi and "内部数据" in gi, "")

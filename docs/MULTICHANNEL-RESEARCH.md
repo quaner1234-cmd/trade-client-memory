@@ -145,7 +145,7 @@
 
 保留 **来源 ID、时间、发件人、正文、附件** 五要素；与邮件渠道并存；可增量去重；覆盖范围如实声明；不引入 CRM 或新界面。
 
-### 3.2 结构定义（每个会话一个 JSON 文件；实测输出见 `D:/Projects/_work_multichannel/内部数据/multichannel/`，仅存本地）
+### 3.2 结构定义（每个会话一个 JSON 文件；实测输出保存在本地工作目录，不进公开仓库）
 
 ```json
 {
@@ -200,7 +200,7 @@
 
 ### 3.4 落盘与 Notion 增量合并（分阶段）
 
-- **阶段 1（本地，已完成）**：平台消息写入 `_work_multichannel/内部数据/multichannel/<channel>/<conversation>.json`；规范化脚本 `normalize_alibaba.py` / `normalize_whatsapp.py`（纯标准库，读已落盘 JSON）。
+- **阶段 1（本地，已完成）**：平台消息写入本地工作目录的 `内部数据/multichannel/<channel>/<conversation>.json`；规范化脚本 `normalize_alibaba.py` / `normalize_whatsapp.py`（纯标准库，读已落盘 JSON）。
 - **阶段 2（Notion，需明确授权后执行）**：按现有客户原始资料页增量合并——原文保留原位、按 message id/时间/版本去重、只追加受支持内容、写后回读。例：某客户页已有「原始 WhatsApp 聊天摘录（用户提供）」章节，新消息追加进该既有章节，而不是新建平行页面。
 
 ## 4. 最小实验执行记录（2 阿里 + 1 WhatsApp）
