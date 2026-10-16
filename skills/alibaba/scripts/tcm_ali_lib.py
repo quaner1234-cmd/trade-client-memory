@@ -176,10 +176,26 @@ def merge_msgs(old, new) -> list[dict]:
     return dedupe_msgs(list(old or []) + list(new or []))
 
 
+_RE_LABEL_UPDATED = re.compile(r"updated\s*on\s*:?\s*", re.I)
+_RE_LABEL_CREATED = re.compile(r"created\s*on\b", re.I)
+
+
 def parse_updated(s: str, now=None) -> tuple[str | None, str | None]:
-    """Parse the platform's 'Updated on: ...' label -> (date, time)."""
+    """Parse the platform's 'Updated on: ...' label -> (date, time).
+
+    Real list rows can carry both labels in one string, e.g.
+    'Created on: 2026-10-01  Updated on: 2026-10-12 15:05'. Only the text
+    AFTER the Updated-on label may be interpreted — scanning the whole string
+    would pick the Created-on date first and make a stale row look fresh.
+    A string carrying only 'Created on' is never an update time.
+    """
     now = now or datetime.now(CST)
     s = (s or "").strip()
+    m_label = _RE_LABEL_UPDATED.search(s)
+    if m_label:
+        s = s[m_label.end():].strip()
+    elif _RE_LABEL_CREATED.search(s):
+        return None, None
     m = re.search(r"(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?", s)
     if m:
         d = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"

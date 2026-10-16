@@ -102,6 +102,19 @@ def test_parse_and_slug():
     check("昨天", lib.parse_updated("昨天", now)[0] == "2026-10-13")
     check("解析裸时间", lib.parse_updated("21:30", now) == ("2026-10-14", "21:30"))
     check("空串返回 None", lib.parse_updated("", now) == (None, None))
+    # 回归：真实列表行可能把两个标签并进同一串（Created on + Updated on）。
+    # 只能解析 Updated on 之后的文本，否则会取到 Created 日期、把旧行当新行。
+    check("Created+Updated 同串：只取 Updated 日期",
+          lib.parse_updated("Created on: 2026-10-01 Updated on: 2026-10-12 15:05", now)
+          == ("2026-10-12", "15:05"))
+    check("Updated 在前 Created 在后：仍取 Updated",
+          lib.parse_updated("Updated on: 2026-10-12 15:05  Created on: 2026-10-01", now)
+          == ("2026-10-12", "15:05"))
+    check("只有 Created on：不当作更新时间",
+          lib.parse_updated("Created on: 2026-10-01", now) == (None, None))
+    check("Created+Updated 月日形式：取 Updated",
+          lib.parse_updated("Created on: 10-01 Updated on: 10-12", now)
+          == ("2026-10-12", None))
     check("slugify 去非法字符", lib.slugify("A/B:C*?") == "a-b-c", lib.slugify("A/B:C*?"))
     check("country_hint 标注未核实", "未核实" in lib.country_hint([{"body": "nothing"}]))
 
@@ -194,6 +207,118 @@ def test_e2e():
         check("status 可运行", rc == 0, out)
 
 
+# ---------------------------------------------------------------- extract regression
+
+class _Args:
+    """Minimal stand-in for argparse args used by extract/ingest."""
+
+    def __init__(self, max_conv=10, since=None, force=False, owner=None):
+        self.max_conv = max_conv
+        self.since = since
+        self.force = force
+        self.owner = owner
+
+
+class _FakeBridge:
+    """Offline bridge returning canned list rows and conversation items."""
+
+    name = "fake"
+
+    def __init__(self, rows, items):
+        self._rows = rows
+        self._items = items
+        self.goto_calls = []
+
+    def start(self):
+        return "fake-sid"
+
+    def stop(self):
+        pass
+
+    def goto(self, url, timeout=180):
+        self.goto_calls.append(url)
+        return True
+
+    def js(self, expr, timeout=120):
+        if expr == cli.LIST_JS:
+            return list(self._rows)
+        if expr == cli.MSG_JS:
+            return {"count": len(self._items), "items": list(self._items)}
+        if expr == cli.SHOWMORE_JS:
+            return 0
+        return None
+
+
+def test_extract_same_day():
+    """回归：'Updated on' 与 last_seen 同日时必须重读会话。
+
+    旧逻辑用 `d <= last_seen` 跳过 → 同日到的消息永远抓不到。修复后同日
+    不跳过，靠消息 ID 去重保证不重复入档；严格更早的会话仍然跳过。
+    """
+    print("\n[extract] 同日更新不被跳过（回归）")
+    with tempfile.TemporaryDirectory() as tmp:
+        p = cli.Paths(tmp)
+        p.ensure()
+        st = cli.default_state("示例业务员")
+        st["iid_to_slug"] = {"900000001": "demo-one", "900000002": "demo-two"}
+        st["customers"]["demo-one"] = {
+            "name": "Demo Buyer One", "iid": "900000001",
+            "dir": "Demo Buyer One - 未核实",
+            "first_seen": "2026-10-13", "last_seen": "2026-10-14",
+            "seen_ids": ["900000002"], "confirmed": False,
+        }
+        st["customers"]["demo-two"] = {
+            "name": "Demo Buyer Two", "iid": "900000002",
+            "dir": "Demo Buyer Two - 未核实",
+            "first_seen": "2026-10-01", "last_seen": "2026-10-14",
+            "seen_ids": [], "confirmed": False,
+        }
+        lib.save_json(p.state, st)
+
+        # 上一轮已归档的旧消息
+        cdir = p.clients / "Demo Buyer One - 未核实"
+        cdir.mkdir(parents=True, exist_ok=True)
+        (cdir / "附件").mkdir(exist_ok=True)
+        (cdir / "客户沟通记录.md").write_text(
+            "# Demo Buyer One ｜ 客户沟通记录\n\n"
+            "- `[2026-10-13 09:00]` **客户**（id=900000002）：old message\n",
+            encoding="utf-8")
+
+        rows = [
+            {"inquiry_id": "900000001", "name": "Demo Buyer One",
+             "updated": "Updated on: 2026-10-14 09:30",          # 与 last_seen 同日
+             "href": "/message/maDetail.htm?imInquiryId=900000001"},
+            {"inquiry_id": "900000002", "name": "Demo Buyer Two",
+             "updated": "Updated on: 2026-10-13 09:30",          # 严格更早 → 仍应跳过
+             "href": "/message/maDetail.htm?imInquiryId=900000002"},
+        ]
+        items = [
+            {"side": "buyer", "messageId": "900000002", "messageType": 1,
+             "sendTime": 1791500000000, "dataOriginal": "old message"},
+            {"side": "buyer", "messageId": "900000099", "messageType": 1,
+             "sendTime": 1791586500000, "dataOriginal": "same-day new message"},
+        ]
+        br = _FakeBridge(rows, items)
+
+        rc = cli.cmd_extract(p, _Args(max_conv=10), br=br)
+        check("extract 成功（fake bridge）", rc == 0, str(rc))
+        convs = sorted(p.raw.glob("conv-900000001-*.json"))
+        check("同日更新的会话未被跳过", len(convs) == 1, str(sorted(p.raw.glob("conv-*"))))
+        check("严格更早的会话仍被跳过", not list(p.raw.glob("conv-900000002-*.json")))
+        if convs:
+            data = lib.load_json(convs[0])
+            ids = [str(i.get("messageId")) for i in (data.get("items") or [])]
+            check("抓取原文含同日新消息", "900000099" in ids, str(ids))
+
+        rc = cli.cmd_ingest(p, _Args())
+        check("复跑 ingest 成功", rc == 0, str(rc))
+        rec = cdir / "客户沟通记录.md"
+        txt = rec.read_text(encoding="utf-8")
+        check("同日新消息已入档（id=900000099）", "id=900000099" in txt, txt[:300])
+        check("旧消息按 ID 去重未重复（id=900000002 仅 1 次）",
+              txt.count("id=900000002") == 1, txt[:300])
+
+
 def test_audit_on_skill():
     print("\n[audit] skill 目录隐私扫描")
     with tempfile.TemporaryDirectory() as tmp:
@@ -258,6 +383,7 @@ def main():
     test_substance()
     test_parse_and_slug()
     test_e2e()
+    test_extract_same_day()
     test_audit_on_skill()
     test_audit_catches_leak()
     test_readonly_guarantee()

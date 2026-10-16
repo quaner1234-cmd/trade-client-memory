@@ -38,7 +38,7 @@ python skills/alibaba/scripts/tcm_ali.py --base ./我的客户 ingest --owner "�
 python skills/alibaba/scripts/tcm_ali.py --base ./我的客户 brief
 ```
 
-完整流程（含 Agent 怎么判断进展、怎么写下一步）看 [`skills/alibaba/SKILL.md`](skills/alibaba/SKILL.md)。
+完整流程（含 Agent 怎么判断进展、怎么写下一步）看 [`SKILL.md`](SKILL.md)。
 
 ## 与 Email Skill 的关系
 

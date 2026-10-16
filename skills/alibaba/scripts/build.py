@@ -39,9 +39,14 @@ def main(outdir=None):
             shutil.copy2(s, stage / rel)
         else:
             print(f"⚠️  缺失 {rel}")
-    lic = ROOT / "LICENSE"
-    if lic.exists():
+    # The MIT LICENSE lives at the repo root (the skill ships as a subtree);
+    # a skill-local LICENSE would take precedence if one is ever added.
+    lic = next((c for c in (SRC / "LICENSE", ROOT.parent / "LICENSE") if c.exists()), None)
+    if lic:
         shutil.copy2(lic, stage / "LICENSE")
+    else:
+        print("❌ 未找到 LICENSE（仓库根目录应有 MIT 许可证），发布包不含许可证，中止。")
+        return 1
 
     files = sorted(p.relative_to(stage) for p in stage.rglob("*") if p.is_file())
     print(f"打包 {len(files)} 个文件 → {stage}")

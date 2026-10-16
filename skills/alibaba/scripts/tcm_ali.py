@@ -329,7 +329,10 @@ def cmd_extract(p: Paths, args, br=None):
             if since and d and d < since:
                 continue
             cust = (st.get("customers") or {}).get((st.get("iid_to_slug") or {}).get(iid, ""))
-            if cust and not args.force and d and cust.get("last_seen") and d <= cust["last_seen"][:10]:
+            # "Updated on" has day precision, so equality does NOT mean "no news":
+            # a same-day message must still be re-read (ingest dedupes by message
+            # id, so re-reading is idempotent). Only strictly older rows skip.
+            if cust and not args.force and d and cust.get("last_seen") and d < cust["last_seen"][:10]:
                 continue
             cand.append(r)
         print(f"待处理会话 {len(cand)} 个（上限 {args.max_conv}）")
